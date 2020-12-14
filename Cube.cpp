@@ -38,8 +38,9 @@ using namespace std;
 // 预编译指令
 // #define RotateDebug
 #define CrossDebug
-//#define OutputFormula
+#define OutputFormula
 
+int OptsNum = 0;
 namespace DataStructure
 {
     // 数据结构
@@ -72,6 +73,15 @@ namespace DataStructure
             for (int j = 1; j <= 3; j++)
                 cube[i][j] = new char[10];
         }
+    }
+
+    // 用来将魔方重置到标准状态的函数
+    void ReSet()
+    {
+        for (int k = 1; k <= 6; k++)
+            for (int i = 1; i <= 3; i++)
+                for (int j = 1; j <= 3; j++)
+                    cube[k][i][j] = StandardColor[k - 1];
     }
 } // namespace DataStructure
 using namespace DataStructure;
@@ -428,7 +438,7 @@ namespace Operate
             Bi();
         else
         {
-            cout << "Wrong Rotate Type" << endl;
+            cout << "Wrong Rotate Type in Function " << endl;
         }
     }
 
@@ -498,14 +508,33 @@ namespace Operate
         }
     }
 
+    void PrintChar(const char x)
+    {
+        if (x == 'r')
+            cout << "Ri";
+        else if (x == 'l')
+            cout << "Li";
+        else if (x == 'b')
+            cout << "Bi";
+        else if (x == 'd')
+            cout << "Di";
+        else if (x == 'u')
+            cout << "Ui";
+        else
+        {
+            cout << x;
+        }
+    }
     // 执行一段公式，Formula为公式对应数组，len为公式长度
     void RunFormula(char *Formula, int len)
     {
         for (int i = 0; i < len; i++)
         {
             StringToRotate(Formula[i]);
+            OptsNum++;
 #ifdef OutputFormula
-            cout << Formula[i] << ' ';
+            PrintChar(Formula[i]);
+            cout << ' ';
 #endif
         }
     }
@@ -751,154 +780,6 @@ namespace BruteCross
     }
 } // namespace BruteCross
 
-namespace TestTools
-{
-
-    // 用于手动测试旋转函数的函数
-    void TestRotate()
-    {
-        char op = 0;
-        while (1)
-        {
-            cin >> op;
-            StringToRotate(op);
-        }
-    }
-
-    // 用于生成测试数据的函数
-    /*
-    生成测试案例的方法：
-    将魔方状态初始化为已还原状态，并对其进行随机打乱
-    向标准输出流中输出打乱后的魔方状态并输出打乱公式
-    
-    打乱步数作为参数传入TestCaseGenerator函数
-    TestCaseGenerator函数同时提供一个Seed参数，若传入的Seed值为零，会以运行程序时的系统时间作为随机数种子，否则以传入的Seed值作为种子。
-*/
-
-    // 用来将魔方重置到标准状态的函数
-    void ReSet()
-    {
-        for (int k = 1; k <= 6; k++)
-            for (int i = 1; i <= 3; i++)
-                for (int j = 1; j <= 3; j++)
-                    cube[k][i][j] = StandardColor[k - 1];
-    }
-
-    // 生成测试案例的函数
-    void TestCaseGenerator(int len, int Seed = 0)
-    {
-        ReSet();
-        if (Seed == 0)
-            Seed = int(time(0));
-        cout << "生成测试数据所用的随机数种子为：" << Seed << endl;
-        srand(Seed);
-        cout << "生成测试案例的打乱公式为" << endl;
-        for (int i = 1; i <= len; i++)
-        {
-            char op = opts[rand() % 12];
-            cout << op << ' ';
-            StringToRotate(op);
-        }
-        cout << endl
-             << "生成魔方的状态为：" << endl;
-        //Sprint();
-    }
-
-    //用于测试底层十字的函数
-    void CrossTester()
-    {
-        int n = 30000;
-        int success = 0;
-        lim = 0;
-        for (int i = 0; i <= 9; i++)
-            stack[i] = 0;
-        freopen("CrossResult.txt", "w", stdout);
-        for (int i = 1; i <= n; i++)
-        {
-            ReSet();
-            cout << "---------------------------------------" << endl;
-            cout << "TestCase " << i << endl;
-            TestCaseGenerator(10, time(0) + i * 5);
-
-            BruteCross::BruteCross();
-
-            if (IsCross())
-            {
-                ++success;
-                cout << "Right Cross" << endl;
-            }
-            else
-                cout << "Wrong Cross" << endl;
-
-            SpiltPrint();
-            cout << "---------------------------------------" << endl;
-        }
-        cout << endl;
-        cout << "Average : " << Sumtime / n << endl;
-        cout << "Maxtime : " << Maxtime << endl
-             << endl;
-        cout << success << '/' << n << endl;
-        fclose(stdout);
-    }
-
-    bool JudgeFloorCorner()
-    {
-        if (!IsCross)
-            return 0;
-        bool res = 1;
-        for (int i = 1; i <= 4; i++)
-            for (int j = 1; j <= 3; j++)
-                if (cube[i][3][j] != StandardColor[i - 1])
-                    return 0;
-        return 1;
-    }
-
-    bool FloorCornerGenerator(int num, int Seed = 0)
-    {
-        ReSet();
-        int n;
-        ifstream fin("FloorCornerData.txt");
-        fin >> n;
-
-        char **F = new char *[n];
-        for (int i = 0; i < n; i++)
-            F[i] = new char[10];
-        for (int i = 0; i < n; i++)
-            cin >> F[i];
-
-        fin.close();
-
-        Seed = int(time(0));
-        srand(Seed);
-        for (int i = 1; i <= num; i++)
-        {
-            int x = rand() % n;
-            RunFormula(F[x], sizeof(F[x]));
-        }
-    }
-
-    void FloorCornerTester()
-    {
-        FloorCornerGenerator(50);
-        cout << "生成底层角块" << endl;
-        Sprint();
-        // 底层角块主函数
-
-        if (JudgeFloorCorner())
-        {
-            cout << "测试底层角块结果正确" << endl;
-        }
-        else
-        {
-            cout << "测试底层角块结果不正确" << endl;
-        }
-        cout << "操作结果为：" << endl;
-        Sprint();
-    }
-
-} // namespace TestTools
-using namespace TestTools;
-
 //接口函数名SecondEdge，作用：将已经还原底层的魔方还原好第二层棱块，无参数，直接作用与全局数组Cube；
 namespace SecondEdge
 {
@@ -1018,7 +899,7 @@ namespace SecondEdge
         else
         {
             RunFormula("UU", 2);
-            Back(4, 2);
+            Back(4, 1);
         }
     }
 } // namespace SecondEdge
@@ -1027,45 +908,48 @@ namespace SecondEdge
 namespace TopCross
 {
 
-    bool matchtopcross()        //判断完成顶面十字
+    bool matchtopcross() //判断完成顶面十字
     {
-        if(cube[5][1][2] == 'W' && cube[5][2][1] == 'W' && cube[5][2][3] == 'W' && cube[5][3][2] == 'W')
+        if (cube[5][1][2] == 'W' && cube[5][2][1] == 'W' && cube[5][2][3] == 'W' && cube[5][3][2] == 'W')
             return 1;
         return 0;
     }
 
     bool yizima()
     {
-        if(cube[5][2][2] == cube[5][1][2] && cube[5][2][2] == cube[5][2][1]) return 1;
+        if (cube[5][2][2] == cube[5][1][2] && cube[5][2][2] == cube[5][2][1])
+            return 1;
         return 0;
     }
 
     bool litcon()
     {
-        if(cube[5][2][1] == cube[5][2][2] && cube[5][2][3] == cube[5][2][2]) return 1;
+        if (cube[5][2][1] == cube[5][2][2] && cube[5][2][3] == cube[5][2][2])
+            return 1;
         return 0;
     }
 
     void perform()
     {
-        if(matchtopcross() == 1) return;
-		
-		bool check = false;
-        for(int i = 1; i <= 4; i++)
+        if (matchtopcross() == 1)
+            return;
+
+        bool check = false;
+        for (int i = 1; i <= 4; i++)
         {
-            if(yizima()	|| litcon())	//一字马、小拐角
+            if (yizima() || litcon()) //一字马、小拐角
             {
-            	check = true;
-				break;
-			}    
+                check = true;
+                break;
+            }
             RunFormula("U", 1);
         }
 
-        RunFormula("FRUruf",6);
-        perform();	     
+        RunFormula("FRUruf", 6);
+        perform();
     }
 
-}
+} // namespace TopCross
 
 //接口函数名crossTran，作用：将已经还原顶层十字的魔方顶层还原，无参数，直接作用与全局数组Cube；
 namespace TopReduction
@@ -1094,11 +978,11 @@ namespace TopReduction
     void Back(int number)
     {
         char *back1 = "BUbUBUUb";
-        char *back2 = "buBubuuB";//右下
+        char *back2 = "buBubuuB"; //右下
         if (number == 1)
-            RunFormula(back1,8);
+            RunFormula(back1, 8);
         else if (number == 2)
-            RunFormula(back2,8);
+            RunFormula(back2, 8);
     }
 
     void Backsix()
@@ -1181,7 +1065,6 @@ namespace TestSecondEdge
         }
         cout << endl
              << "生成魔方的状态为：" << endl;
-        
     }
 
     bool Right()
@@ -1192,7 +1075,7 @@ namespace TestSecondEdge
                     return 0;
         for (int i = 1; i < 4; i++)
         {
-            if (cube[1][3][i] != 'G'  || cube[1][2][i] != 'G')
+            if (cube[1][3][i] != 'G' || cube[1][2][i] != 'G')
                 return 0;
             if (cube[2][3][i] != 'B' || cube[2][2][i] != 'B')
                 return 0;
@@ -1212,7 +1095,7 @@ namespace TestSecondEdge
         cout << Right();
     }
 
-}
+} // namespace TestSecondEdge
 
 //接口函数名TestTopReduction, 作用： 测试将已经还原好第二层棱块的魔方还原顶层十字与顶层还原
 namespace TestTopReduction
@@ -1250,7 +1133,7 @@ namespace TestTopReduction
                     return 0;
         for (int i = 1; i < 4; i++)
         {
-            if (cube[1][3][i] != 'G'  || cube[1][2][i] != 'G')
+            if (cube[1][3][i] != 'G' || cube[1][2][i] != 'G')
                 return 0;
             if (cube[2][3][i] != 'B' || cube[2][2][i] != 'B')
                 return 0;
@@ -1264,19 +1147,246 @@ namespace TestTopReduction
 
     void TestTopReduction()
     {
-        TestTopReductionGenerator(10000,0);
+        TestTopReductionGenerator(10000, 0);
         TopCross::perform();
         TopReduction::crossTran();
         cout << Right();
     }
-}
+} // namespace TestTopReduction
+namespace bottomcorner
+{
+    int amt = 0;
+    bool flag[5] = {1, 0, 0, 0, 0};
+    //判断底面各角是否归位
 
-  
+    bool matchcorner()
+    {
+        char std[6] = {};
+        std[1] = cube[1][2][2]; //1面
+        std[2] = cube[2][2][2]; //2面
+        std[3] = cube[3][2][2]; //3面
+        std[4] = cube[4][2][2]; //4面
+        std[5] = cube[6][2][2]; //6面
+
+        //按照题目规定各个面的标号
+        bool bingo = (cube[6][1][1] == std[5] && cube[6][1][3] == std[5] && cube[6][3][1] == std[5] && cube[6][1][3] == std[5]      //6面归位
+                      && cube[1][3][1] == std[1] && cube[1][3][3] == std[1] && cube[2][3][1] == std[2] && cube[2][3][3] == std[2]   //1面和3面归位
+                      && cube[3][3][1] == std[3] && cube[3][3][3] == std[3] && cube[4][3][1] == std[4] && cube[4][3][3] == std[4]); //3面和4面归位
+
+        if (bingo == 1)
+            return 1;
+        return 0;
+    }
+
+    //进行底面各角归位
+
+    //把底层角块转到顶层
+
+    //对顶层角块归位
+    void flag1() //1面    (1,3)
+    {
+        if (cube[4][1][1] == 'Y' && cube[1][1][3] == 'G' && cube[5][3][3] == 'R')
+        {
+            RunFormula("RUru", 4);
+            amt++;
+            flag[1] = 1;
+        }
+        if (cube[1][1][3] == 'Y' && cube[5][3][3] == 'G' && cube[4][1][1] == 'R')
+        {
+            RunFormula("URur", 4);
+            amt++;
+            flag[1] = 1;
+        }
+        if (cube[5][3][3] == 'Y' && cube[4][1][1] == 'G' && cube[1][1][3] == 'R')
+        {
+            RunFormula("RUru", 4);
+            RunFormula("RUru", 4);
+            RunFormula("RUru", 4);
+            amt++;
+            flag[1] = 1;
+        }
+        return;
+    }
+
+    void flag2() //2面     (3,1)
+    {
+        if (cube[3][1][1] == 'Y' && cube[2][1][3] == 'B' && cube[5][1][1] == 'O')
+        {
+            RunFormula("LUlu", 4);
+            amt++;
+            flag[2] = 1;
+        }
+        if (cube[2][1][3] == 'Y' && cube[5][1][1] == 'B' && cube[3][1][1] == 'O')
+        {
+            RunFormula("ULul", 4);
+            amt++;
+            flag[2] = 1;
+        }
+        if (cube[5][1][1] == 'Y' && cube[3][1][1] == 'B' && cube[2][1][3] == 'O')
+        {
+            RunFormula("LUlu", 4);
+            RunFormula("LUlu", 4);
+            RunFormula("LUlu", 4);
+            amt++;
+            flag[2] = 1;
+        }
+        return;
+    }
+
+    void flag3() //3面      (1,1)
+    {
+        if (cube[1][1][1] == 'Y' && cube[3][1][3] == 'O' && cube[5][3][1] == 'G')
+        {
+            RunFormula("FUfu", 4);
+            amt++;
+            flag[3] = 1;
+        }
+        if (cube[3][1][3] == 'Y' && cube[5][3][1] == 'O' && cube[1][1][1] == 'G')
+        {
+            RunFormula("UFuf", 4);
+            amt++;
+            flag[3] = 1;
+        }
+        if (cube[5][3][1] == 'Y' && cube[1][1][1] == 'O' && cube[3][1][3] == 'G')
+        {
+            RunFormula("FUfu", 4);
+            RunFormula("FUfu", 4);
+            RunFormula("FUfu", 4);
+            amt++;
+            flag[3] = 1;
+        }
+        return;
+    }
+
+    void flag4() //4面       (3,3)
+    {
+        if (cube[2][1][1] == 'Y' && cube[4][1][3] == 'R' && cube[5][1][3] == 'B')
+        {
+            RunFormula("BUbu", 4);
+            amt++;
+            flag[4] = 1;
+        }
+        if (cube[4][1][3] == 'Y' && cube[5][1][3] == 'R' && cube[2][1][1] == 'B')
+        {
+            RunFormula("UBub", 4);
+            amt++;
+            flag[4] = 1;
+        }
+        if (cube[5][1][3] == 'Y' && cube[2][1][1] == 'R' && cube[4][1][3] == 'B')
+        {
+            RunFormula("BUbu", 4);
+            RunFormula("BUbu", 4);
+            RunFormula("BUbu", 4);
+            amt++;
+            flag[4] = 1;
+        }
+    }
+
+    //次数可以减少！！！！！
+    void TurnupCorner()
+    {
+        for (int i = 1; i <= 16; i++)
+        {
+            //如果还原了，记录
+            if (flag[1] == 0)
+                flag1();
+
+            if (flag[2] == 0)
+                flag2();
+
+            if (flag[3] == 0)
+                flag3();
+
+            if (flag[4] == 0)
+                flag4();
+
+            if (amt == 4)
+                break;
+            //还没有恢复4个 但有恢复的了
+            RunFormula("U", 1);
+        }
+    }
+
+    //恢复底角的主函数
+    void botcongw()
+    {
+        amt = 0;
+        memset(flag, 0, sizeof flag);
+        flag[0] = 1;
+
+        //顶层有  则还原
+        TurnupCorner();
+        //此时4块中已经还原了 amt 块
+        //不在顶层，说明必在底层             将底层翻上顶层，归位
+        int tmp = amt;
+        for (int i = 1; i <= 4 - tmp; i++)
+        {
+            if (flag[1] == 0) //1面的没归位
+            {
+                RunFormula("RUr", 3);
+                RunFormula("RUr", 3);
+                RunFormula("RUr", 3);
+                TurnupCorner();
+            }
+            if (flag[2] == 0) //2面的没归位
+            {
+                RunFormula("LUl", 3);
+                RunFormula("LUl", 3);
+                RunFormula("LUl", 3);
+                TurnupCorner();
+            }
+            if (flag[3] == 0) //3面的没归位
+            {
+                RunFormula("FUf", 3);
+                RunFormula("FUf", 3);
+                RunFormula("FUf", 3);
+                TurnupCorner();
+            }
+            if (flag[4] == 0) //4面的没归位
+            {
+                RunFormula("BUb", 3);
+                RunFormula("BUb", 3);
+                RunFormula("BUb", 3);
+                TurnupCorner();
+            }
+        }
+    }
+} // namespace bottomcorner
+
 // 顶层角块 主函数 TopCorner::TopCorner();
 namespace TopCorner
 {
+
+    bool IsTopCorner()
+    {
+        return cube[1][1][1] == cube[1][1][3] && cube[2][1][1] == cube[2][1][3] && cube[3][1][1] == cube[3][1][3] && cube[4][1][1] == cube[4][1][3];
+    }
+
+    bool IsColorMarch()
+    {
+        return cube[1][1][1] == cube[1][2][2];
+    }
+
+    void MarchColor()
+    {
+        for (int i = 1; i <= 4; i++)
+        {
+            if (IsColorMarch())
+            {
+                return;
+            }
+            RunFormula("U", 1);
+        }
+    }
+
     void TopCorner()
     {
+        if (IsTopCorner())
+        {
+            MarchColor();
+            return;
+        }
+
         int flag = 0;
         for (int i = 1; i <= 4; i++)
         {
@@ -1286,6 +1396,7 @@ namespace TopCorner
                 RunFormula("RbRFFrBRFFRR", 12);
                 break;
             }
+            RunFormula("U", 1);
         }
         if (!flag)
         {
@@ -1298,56 +1409,335 @@ namespace TopCorner
                     RunFormula("RbRFFrBRFFRR", 12);
                     break;
                 }
+                RunFormula("U", 1);
             }
         }
     }
 } // namespace TopCorner
 
 // 顶层棱块 未施工完成
-namespace TopmMid
+namespace TopMid
 {
-    void TopMid()
+
+    bool IsTopMid()
     {
-        for (int i = 1;i <= 4; i++)
+        for (int i = 1; i <= 4; i++)
         {
-            if (cube[1][1][1] == cube[1][2][2])
+            if (cube[i][1][2] != cube[i][1][1])
+                return 0;
+        }
+        return 1;
+    }
+
+    bool IsColorMarch()
+    {
+        for (int i = 1; i <= 4; i++)
+        {
+            if (cube[i][1][2] != cube[i][2][2])
+                return 0;
+        }
+        return 1;
+    }
+
+    void MarchColor()
+    {
+        for (int i = 1; i <= 4; i++)
+        {
+            if (IsColorMarch())
             {
-                break;
+                return;
             }
-            RunFormula("U",1);
-        }
-
-        if (cube[1][1][2] == 'R' && cube[2][1][2] == 'B' && cube[3][1][2] == 'G' && cube[4][1][2] == 'O')
-        {
-            RunFormula("RuRURURuruRR",12);
-        }
-
-        if (cube[1][1][2] == 'O' && cube[2][1][2] == 'B' && cube[3][1][2] == 'R' && cube[4][1][2] == 'G')
-        {
-            RunFormula("UU",2);
-            RunFormula("rUr",12);
+            RunFormula("U", 1);
         }
     }
-} // namespace TopmMid
+
+    void TopMid()
+    {
+        if (IsTopMid())
+        {
+            MarchColor();
+        }
+
+        int flag = 0;
+
+        for (int i = 1; i <= 4; i++)
+        {
+            if (cube[1][1][2] == cube[3][1][1] && cube[3][1][2] == cube[4][1][1] && cube[4][1][2] == cube[1][1][1])
+            {
+                RunFormula("RUrURUUr", 8);
+                RunFormula("U", 1);
+                RunFormula("luLulUUL", 8);
+                flag = 1;
+                break;
+            }
+            else if (cube[1][1][2] == cube[4][1][1] && cube[4][1][2] == cube[3][1][1] && cube[3][1][2] == cube[1][1][1])
+            {
+                RunFormula("luLulUUL", 8);
+                RunFormula("u", 1);
+                RunFormula("RUrURUUr", 8);
+                flag = 1;
+                break;
+            }
+            RunFormula("U", 1);
+        }
+
+        if (!flag)
+        {
+            RunFormula("RUrURUUr", 8);
+            RunFormula("U", 1);
+            RunFormula("luLulUUL", 8);
+        }
+        else
+        {
+            MarchColor();
+            return;
+        }
+
+        for (int i = 1; i <= 4; i++)
+        {
+            if (cube[1][1][2] == cube[3][1][1] && cube[3][1][2] == cube[4][1][1] && cube[4][1][2] == cube[1][1][1])
+            {
+                RunFormula("RUrURUUr", 8);
+                RunFormula("U", 1);
+                RunFormula("luLulUUL", 8);
+                break;
+            }
+            else if (cube[1][1][2] == cube[4][1][1] && cube[4][1][2] == cube[3][1][1] && cube[3][1][2] == cube[1][1][1])
+            {
+                RunFormula("luLulUUL", 8);
+                RunFormula("u", 1);
+                RunFormula("RUrURUUr", 8);
+                break;
+            }
+            RunFormula("U", 1);
+        }
+
+        MarchColor();
+    }
+} // namespace TopMid
+
+namespace TestTools
+{
+
+    // 用于手动测试旋转函数的函数
+    void TestRotate()
+    {
+        char op = 0;
+        while (1)
+        {
+            cin >> op;
+            StringToRotate(op);
+        }
+    }
+
+    // 用于生成测试数据的函数
+    /*
+    生成测试案例的方法：
+    将魔方状态初始化为已还原状态，并对其进行随机打乱
+    向标准输出流中输出打乱后的魔方状态并输出打乱公式
+    
+    打乱步数作为参数传入TestCaseGenerator函数
+    TestCaseGenerator函数同时提供一个Seed参数，若传入的Seed值为零，会以运行程序时的系统时间作为随机数种子，否则以传入的Seed值作为种子。
+*/
+
+    // 生成测试案例的函数
+    void TestCaseGenerator(int len, int Seed = 0)
+    {
+        ReSet();
+        if (Seed == 0)
+            Seed = int(time(0));
+        cout << "生成测试数据所用的随机数种子为：" << Seed << endl;
+        srand(Seed);
+        cout << "生成测试案例的打乱公式为" << endl;
+        for (int i = 1; i <= len; i++)
+        {
+            char op = opts[rand() % 12];
+            cout << op << ' ';
+            StringToRotate(op);
+        }
+        cout << endl
+             << "生成魔方的状态为：" << endl;
+        //Sprint();
+    }
+
+    //用于测试底层十字的函数
+    void CrossTester()
+    {
+        int n = 30000;
+        int success = 0;
+        lim = 0;
+        for (int i = 0; i <= 9; i++)
+            stack[i] = 0;
+        freopen("CrossResult.txt", "w", stdout);
+        for (int i = 1; i <= n; i++)
+        {
+            ReSet();
+            cout << "---------------------------------------" << endl;
+            cout << "TestCase " << i << endl;
+            TestCaseGenerator(10, time(0) + i * 5);
+
+            BruteCross::BruteCross();
+
+            if (IsCross())
+            {
+                ++success;
+                cout << "Right Cross" << endl;
+            }
+            else
+                cout << "Wrong Cross" << endl;
+
+            SpiltPrint();
+            cout << "---------------------------------------" << endl;
+        }
+        cout << endl;
+        cout << "Average : " << Sumtime / n << endl;
+        cout << "Maxtime : " << Maxtime << endl
+             << endl;
+        cout << success << '/' << n << endl;
+        fclose(stdout);
+    }
+
+    bool JudgeFloorCorner()
+    {
+        if (!IsCross)
+            return 0;
+        bool res = 1;
+        for (int i = 1; i <= 4; i++)
+            for (int j = 1; j <= 3; j++)
+                if (cube[i][3][j] != StandardColor[i - 1])
+                    return 0;
+        return 1;
+    }
+
+    bool FloorCornerGenerator(int num, int Seed = 0)
+    {
+        ReSet();
+        int n;
+        ifstream fin("FloorCornerData.txt");
+        fin >> n;
+
+        char **F = new char *[n];
+        for (int i = 0; i < n; i++)
+            F[i] = new char[10];
+        for (int i = 0; i < n; i++)
+            fin >> F[i];
+
+        fin.close();
+
+        Seed = int(time(0));
+        srand(Seed);
+        for (int i = 1; i <= num; i++)
+        {
+            int x = rand() % n;
+            RunFormula(F[x], strlen(F[x]));
+        }
+    }
+
+    void FloorCornerTester()
+    {
+        cout << "-----------------------------------------------------------" << endl;
+        FloorCornerGenerator(50);
+        cout << "生成底层角块" << endl;
+        SpiltPrint();
+        // 底层角块主函数
+        bottomcorner::botcongw();
+
+        if (JudgeFloorCorner())
+        {
+            cout << "测试底层角块结果正确" << endl;
+        }
+        else
+        {
+            cout << "测试底层角块结果不正确" << endl;
+        }
+        cout << "操作结果为：" << endl;
+        SpiltPrint();
+        cout << "-----------------------------------------------------------" << endl;
+    }
+
+} // namespace TestTools
+using namespace TestTools;
 
 void MainFunction()
 {
     // Step1 : 底层十字
+    //SpiltPrint();
+    //Sprint();
     BruteCross::BruteCross();
+    //SpiltPrint();
 
     // Step2 :
+    bottomcorner::botcongw();
+    //SpiltPrint();
 
     // Step3 : 第二层棱块归位
     SecondEdge::SecondEdge();
+    //SpiltPrint();
 
     // Step4 : 顶层十字
+    TopCross::perform();
+    //SpiltPrint();
 
     // Step5 : 顶面还原
     TopReduction::crossTran();
+    //SpiltPrint();
 
     // Step6 : 顶层角块
+    TopCorner::TopCorner();
+    //SpiltPrint();
 
     // Step7 : 顶层棱块
+    TopMid::TopMid();
+    //SpiltPrint();
+}
+
+bool IsEnd()
+{
+    for (int i = 1; i <= 6; i++)
+        for (int j = 1; j <= 3; j++)
+            for (int k = 1; k <= 3; k++)
+                if (cube[i][j][k] != cube[i][2][2])
+                    return 0;
+    return 1;
+}
+
+void FinalTest()
+{
+    int n = 10000;
+
+    freopen("Result.txt", "w", stdout);
+
+    int success = 0;
+    int out = 0;
+    int maxStep = 0;
+    for (int i = 1; i <= n; i++)
+    {
+        OptsNum = 0;
+        cout << "TestCase:" << i << endl;
+        TestCaseGenerator(50, time(0) + i * 5);
+        MainFunction();
+        if (IsEnd())
+        {
+            cout << "Right" << endl;
+            success++;
+        }
+        else
+        {
+            cout << "Wrong" << endl;
+        }
+        cout << OptsNum << endl;
+        maxStep = max(maxStep,OptsNum);
+        if (OptsNum > 1000)
+        {
+            cout << "Too Long !!!" << endl;
+            out++;
+        }
+    }
+
+    cout << success << '/' << n << endl;
+    cout << out << '/' << n << endl;
+    cout << maxStep << endl;
+    fclose(stdout);
 }
 
 int main()
@@ -1355,9 +1745,21 @@ int main()
     // 初始化动态数组cube
     init();
 
+    Sread();
     // 随机生成测试数据
     //TestCaseGenerator(60);
 
     //SearchCross();
-    TestTopReduction::TestTopReduction();
+    //TestTopReduction::TestTopReduction();
+
+    //TestTools::FloorCornerTester();
+
+    //TestCaseGenerator(50, time(0));
+    // MainFunction();
+    // SpiltPrint();
+    //bottomcorner::amt = 0;
+    //FinalTest();
+
+    MainFunction();
+    // cout << endl << OptsNum << endl;
 }
